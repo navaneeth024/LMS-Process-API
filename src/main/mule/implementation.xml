@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<flow name="getVehicleData" doc:id="a9319b1a-5555-4f03-83d5-86e6c04bba90" >
+		<http:listener doc:name="Listener" doc:id="dccef9c5-57c0-47bd-9ac9-a5b3b821dbc7" path="/vehicle_data" config-ref="HTTP_Listener_config1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="d5b8c8cd-4caa-4c2c-acdc-9cc41e7bd4a2" />
+		<ee:transform doc:name="Transform Message" doc:id="ba375631-3f0f-4c65-a6b0-5631a2247e0b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+import * from modules::vehicle
+---
+{
+	"Id" : getCar(car, payload."parts"."model"."content")
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="e26e5da0-e58c-4d2a-b640-6ae82ad0774b" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[SELECT FIELDS(ALL) FROM vehicle__c WHERE Id = :id LIMIT 200]]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[{
+	id : "'" ++ payload.Id ++ "'"
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="b7e61fb7-c0ed-442e-a68b-76de888e17cb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="getDealerData" doc:id="58665285-720e-464b-9261-c105196eb188" >
+		<http:listener doc:name="Listener" doc:id="8b5b76bc-f32b-45ac-93f9-8964c6b5b0f6" path="/dealer_data" config-ref="HTTP_Listener_config1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="3042747c-5405-4188-bde7-d5e06a14ea9c" />
+		<ee:transform doc:name="Transform Message" doc:id="da730ded-42ef-4f07-ab96-051a23e1ade4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+import * from modules::postcode
+---
+{
+	"Id" : getDealer(post, payload."parts"."PostalCode"."content")
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:query doc:name="Query" doc:id="2b5e1b4f-d5db-4a93-879d-cbff651740d9" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[SELECT FIELDS(ALL) FROM Contact WHERE Id = :id LIMIT 200]]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[{
+	id : "'" ++ payload."Id" ++ "'"
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="8cb173f0-9ac2-4761-a4f0-f519f97dedbb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="2a40722b-1f8d-4790-8785-e13b1a48e674" />
+	</flow>
+	<flow name="salesforce_insert" doc:id="8cba066c-14b1-4da3-8e4d-b80b60dfadc9" >
+		<ee:transform doc:name="formData-to-variable(lead_data)" doc:id="5c7e2b97-8d69-40ea-b809-5eb440f1f203" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="lead_data" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="POST" doc:name="checking-contact-to-systemAPI" doc:id="263349fc-033b-41d1-a78e-e3a085aeb9c9" config-ref="HTTP_Request_configuration" path="/api/contactcheck">
+			<http:body ><![CDATA[#[vars.lead_data]]]></http:body>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="718319bf-5716-498a-ab4e-fc97c4ce4aff" />
+		<ee:transform doc:name="Transform Message" doc:id="a1c04d4e-f116-499a-b7eb-23018ccda16b" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="contact_info" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"id" : payload.id,
+	"status" : if(payload.status == true ) "new contact"  else "existing contact"
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="POST" doc:name="Request" doc:id="f2ad2c5a-5cc6-4004-ba44-efca86a9f366" config-ref="HTTP_Request_configuration" path="/api/leadcheck">
+			<http:body ><![CDATA[#[vars.lead_data]]]></http:body>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"contactId" : vars.contact_info.id
+}]]]></http:query-params>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="c1196d9a-4204-4d85-8df9-bb0db5dd8d77" />
+		<ee:transform doc:name="Transform Message" doc:id="676a196c-15b8-4935-97d9-3d9da108bc47" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="lead_info" ><![CDATA[%dw 2.0
+output application/json
+---
+{	
+	"id" : payload.id,
+	"status" : if(payload.status == true ) "new lead"  else if (vars.contact_info.status == "new contact") "new lead" else "lead exist"
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="b4f5ec9e-94b0-485d-8719-e7e636ec4402" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="response" ><![CDATA[%dw 2.0
+import * from modules::postcode
+import * from modules::vehicle
+output application/json
+---
+{ 
+     	Salutation : vars.lead_data."parts"."salutation"."content",	
+	FirstName : vars.lead_data."parts"."firstname"."content",
+	LastName : vars.lead_data."parts"."lastname"."content",
+	Email : vars.lead_data."parts"."email"."content",
+	Phone : vars.lead_data."parts"."phone"."content",
+	Company : "MG",
+	Street : vars.lead_data."parts"."street"."content",
+	City : vars.lead_data."parts"."city"."content",
+	State : vars.lead_data."parts"."state"."content",
+	PostalCode : vars.lead_data."parts"."postcode"."content",
+	Country : vars.lead_data."parts"."country"."content",
+	Description : vars.lead_data."parts"."message"."content",
+	"Dealer_id" : getDealer(post, vars.lead_data."parts"."postcode"."content"),
+	service_type	 : vars.lead_data."parts"."service_type"."content",
+    "vehicle_model" : vars.lead_data."parts"."vehicle_model"."content",
+    vehicle_id : getCar(car, vars.lead_data."parts"."vehicle_model"."content"),
+    lead_id : vars.lead_info.id,
+    contact_status : vars.contact_info.status,
+    lead_status : vars.lead_info.status
+	}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<mongo:insert-document collectionName="#[vars.response.Dealer_id]" doc:name="Insert document" doc:id="31c5fbe0-4072-40ec-b7fd-9903154f4648" config-ref="MongoDB_Config">
+					<mongo:document><![CDATA[#[vars.response]]]></mongo:document>
+				</mongo:insert-document>
+		<logger level="INFO" doc:name="Logger" doc:id="6d67857b-a020-46e2-9f69-4a5cc160fb49" />
+	</flow>
+</mule>

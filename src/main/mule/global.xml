@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
+http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="a676f003-e52a-4e93-8d2e-a83e7d10d13b" file="config.yaml" />
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="17a06c69-6137-4811-a1b6-a64f02553a0b" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="08dea516-103a-4764-922b-770182bb6251" >
+		<http:request-connection host="salesforcesystem.us-e2.cloudhub.io" />
+	</http:request-config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="d1642882-a509-490e-9518-ef73a07043b5" >
+		<salesforce:basic-connection username="${salesforce.username}" password="${salesforce.password}" securityToken="${salesforce.access_tocken}" />
+	</salesforce:sfdc-config>
+	<mongo:config name="MongoDB_Config" doc:name="MongoDB Config" doc:id="695e25be-ee74-4d83-a4ea-fd2a5f658843" >
+		<mongo:connection-string-connection connectionString="mongodb+srv://Buniyamin:Buniyamincy@cluster0.tm1vs.mongodb.net/myFirstDatabase?retryWrites=true&amp;w=majority" />
+	</mongo:config>
+</mule>
